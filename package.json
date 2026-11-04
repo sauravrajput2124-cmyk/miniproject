@@ -1,0 +1,21 @@
+{
+  "name": "smart-ev-charging-station-finder",
+  "version": "2.0.0",
+  "description": "Smart EV Charging Station Finder & Availability System - Full Stack",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js",
+    "test": "node test-e2e.js"
+  },
+  "keywords": ["ev-charging", "academic-project", "slot-booking"],
+  "author": "Academic Project Team",
+  "license": "MIT",
+  "dependencies": {
+    "express": "^4.18.2",
+    "better-sqlite3": "^9.4.3",
+    "bcryptjs": "^2.4.3",
+    "express-session": "^1.17.3",
+    "cors": "^2.8.5"
+  }
+}

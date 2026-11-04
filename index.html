@@ -1,0 +1,1338 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>EVCharge India — Smart EV Charging Station Finder & Availability System</title>
+  <link rel="stylesheet" href="css/styles.css" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+</head>
+<body class="guest-mode">
+
+<!-- ═════════════════════════════════════════════════════════════════════════════
+     TOP NAVIGATION BAR
+═════════════════════════════════════════════════════════════════════════════ -->
+<nav class="navbar" id="navbar">
+  <div class="nav-container">
+    <div class="nav-left">
+      <button class="mobile-toggle" id="mobile-toggle-btn" aria-label="Toggle navigation">
+        ☰
+      </button>
+      <a href="#landing" class="nav-brand">
+        <div class="brand-icon-wrapper">⚡</div>
+        <span>EVCharge<span style="color:var(--primary);">India</span></span>
+        <span class="brand-badge">P2P Network</span>
+      </a>
+    </div>
+
+    <!-- 1. Guest Nav Menu -->
+    <ul class="nav-links" id="nav-guest">
+      <li><a href="#landing" class="nav-link">Home</a></li>
+      <li><a href="#find-stations" class="nav-link">Find Chargers</a></li>
+      <li><a href="#landing#how-it-works" class="nav-link">How It Works</a></li>
+      <li><a href="#landing#benefits" class="nav-link">Benefits</a></li>
+      <li><a href="#login" class="nav-link btn-outline-sm">Sign In</a></li>
+      <li><a href="#register-ev" class="nav-link btn-primary-sm">Register</a></li>
+    </ul>
+
+    <!-- 2. EV Owner Top Nav Info -->
+    <div class="nav-links hidden" id="nav-ev-owner">
+      <div class="user-badge-nav">
+        <div class="user-avatar-mini" id="ev-avatar-nav">EV</div>
+        <span id="ev-name-nav">EV Owner</span>
+        <span class="user-role-pill">Driver</span>
+      </div>
+      <button class="nav-link btn-logout" id="btn-logout-owner">Logout</button>
+    </div>
+
+    <!-- 3. Charger Provider Top Nav Info -->
+    <div class="nav-links hidden" id="nav-provider">
+      <div class="user-badge-nav">
+        <div class="user-avatar-mini" id="provider-avatar-nav" style="background:#1E8255;">CP</div>
+        <span id="provider-name-nav">Host</span>
+        <span class="user-role-pill">Host</span>
+      </div>
+      <button class="nav-link btn-logout" id="btn-logout-provider">Logout</button>
+    </div>
+  </div>
+</nav>
+
+<!-- ═════════════════════════════════════════════════════════════════════════════
+     TOAST NOTIFICATIONS & LOADING OVERLAY
+═════════════════════════════════════════════════════════════════════════════ -->
+<div class="toast-container" id="toast-container"></div>
+
+<div class="loading-overlay hidden" id="loading-overlay">
+  <div class="spinner"></div>
+</div>
+
+<!-- ═════════════════════════════════════════════════════════════════════════════
+     APP SHELL (SIDEBAR FOR DASHBOARDS + WORKSPACE)
+═════════════════════════════════════════════════════════════════════════════ -->
+<div class="app-shell" id="app-shell">
+
+  <!-- Authenticated Sidebar (Hidden for guests) -->
+  <aside class="app-sidebar" id="app-sidebar">
+    <div>
+      <div class="sidebar-section-title" id="sidebar-role-title">NAVIGATION</div>
+      <ul class="sidebar-menu" id="sidebar-menu-ev">
+        <li class="sidebar-item" data-route="ev-dashboard">
+          <a href="#ev-dashboard"><span class="item-left">📊 Dashboard</span></a>
+        </li>
+        <li class="sidebar-item" data-route="find-stations">
+          <a href="#find-stations"><span class="item-left">🔍 Find Chargers</span></a>
+        </li>
+        <li class="sidebar-item" data-route="my-requests">
+          <a href="#my-requests"><span class="item-left">📋 My Requests</span></a>
+        </li>
+        <li class="sidebar-item" data-route="ev-profile">
+          <a href="#ev-profile"><span class="item-left">👤 My Profile</span></a>
+        </li>
+      </ul>
+
+      <ul class="sidebar-menu hidden" id="sidebar-menu-provider">
+        <li class="sidebar-item" data-route="provider-dashboard">
+          <a href="#provider-dashboard"><span class="item-left">📊 Dashboard</span></a>
+        </li>
+        <li class="sidebar-item" data-route="incoming-requests">
+          <a href="#incoming-requests">
+            <span class="item-left">📥 Incoming Requests</span>
+            <span class="badge-count hidden" id="sidebar-pending-badge">0</span>
+          </a>
+        </li>
+        <li class="sidebar-item" data-route="my-chargers">
+          <a href="#my-chargers"><span class="item-left">⚡ My Chargers</span></a>
+        </li>
+        <li class="sidebar-item" data-route="add-charger">
+          <a href="#add-charger"><span class="item-left">➕ Add Charger</span></a>
+        </li>
+        <li class="sidebar-item" data-route="provider-profile">
+          <a href="#provider-profile"><span class="item-left">👤 Host Profile</span></a>
+        </li>
+      </ul>
+    </div>
+
+    <div class="sidebar-footer">
+      <div class="sidebar-tip-card">
+        <strong>🌱 Clean Mobility</strong>
+        Connecting drivers with verified private & commercial chargers across India.
+      </div>
+    </div>
+  </aside>
+
+  <!-- Main Content Workspace -->
+  <main class="app-workspace main-content" id="main-content">
+
+    <!-- ─────────────────────────────────────────────────────────────────────────
+         PAGE: LANDING (MARKETING & DISCOVERY)
+    ───────────────────────────────────────────────────────────────────────── -->
+    <section class="page" id="page-landing">
+      <!-- Hero Section -->
+      <div class="hero">
+        <div class="container">
+          <div class="hero-grid">
+            <div class="hero-content">
+              <div class="hero-badge">
+                <span>🌱</span> India's Trusted EV Charging Network
+              </div>
+              <h1 class="hero-title">
+                Find EV Charging Stations <span class="text-primary">Near You</span>
+              </h1>
+              <p class="hero-subtitle">
+                Discover verified commercial fast hubs and private neighborhood wallbox chargers across India. Pre-book guaranteed time slots, pay transparent tariffs, and charge your electric vehicle with zero hassle.
+              </p>
+              <div class="hero-actions">
+                <a href="#find-stations" class="btn btn-primary btn-lg">🔍 Find Charging Stations</a>
+                <a href="#register-provider" class="btn btn-outline btn-lg">🔌 List My Charger</a>
+              </div>
+              <div class="hero-stats" id="hero-stats">
+                <div class="stat-item">
+                  <span class="stat-number" id="stat-stations">3</span>
+                  <span class="stat-label">Active Stations</span>
+                </div>
+                <div class="stat-item">
+                  <span class="stat-number" id="stat-available">3</span>
+                  <span class="stat-label">Available Now</span>
+                </div>
+                <div class="stat-item">
+                  <span class="stat-number" id="stat-cities">5+</span>
+                  <span class="stat-label">Metro Cities</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Hero Visual Widget -->
+            <div class="hero-mockup-wrapper">
+              <div class="hero-mockup-card">
+                <div class="mockup-header">
+                  <div>
+                    <strong style="font-size:1rem;color:var(--text-main);display:block;">EcoVolt Fast Hub</strong>
+                    <span style="font-size:0.8rem;color:var(--text-muted);">📍 Indiranagar, Bengaluru</span>
+                  </div>
+                  <span class="mockup-badge">● Available</span>
+                </div>
+                <div class="mockup-battery-widget">
+                  <div class="battery-circle">
+                    78%
+                    <span>Optimal</span>
+                  </div>
+                  <div>
+                    <div style="font-weight:700;font-size:0.95rem;color:var(--text-main);">Fast DC Bay #2</div>
+                    <div style="font-size:0.825rem;color:var(--text-muted);margin-top:2px;">50 kW CCS2 DC Fast Charger</div>
+                    <div style="font-size:0.75rem;color:var(--primary);font-weight:600;margin-top:4px;">Ready for immediate plug-in</div>
+                  </div>
+                </div>
+                <div class="mockup-details-list">
+                  <div class="mockup-row">
+                    <span>Charging Tariff</span>
+                    <strong>₹14.00 / kWh</strong>
+                  </div>
+                  <div class="mockup-row">
+                    <span>Estimated 20% ➔ 80%</span>
+                    <strong>35 Minutes</strong>
+                  </div>
+                  <div class="mockup-row">
+                    <span>Host Rating</span>
+                    <strong>⭐ 4.9 (120+ Sessions)</strong>
+                  </div>
+                </div>
+                <div style="margin-top:20px;">
+                  <a href="#find-stations" class="btn btn-primary btn-full">Book This Station</a>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Feature Cards Section -->
+      <section class="features-section">
+        <div class="container">
+          <div class="section-header">
+            <span class="section-badge">Platform Highlights</span>
+            <h2 class="section-title">Why Choose EVCharge India</h2>
+            <p class="section-subtitle">
+              Engineered with deterministic software principles for transparent billing, guaranteed availability, and reliable peer-to-peer sharing.
+            </p>
+          </div>
+          <div class="features-grid">
+            <div class="feature-card">
+              <div class="feature-icon-box">⚡</div>
+              <h3>Fast Discovery</h3>
+              <p>Filter stations by plug type (CCS2, Type 2, 15A Socket), max tariff, and verified live availability status.</p>
+            </div>
+            <div class="feature-card">
+              <div class="feature-icon-box">🔒</div>
+              <h3>Guaranteed Slots</h3>
+              <p>Strict slot conflict prevention ensures your reserved time slot is never double-booked by another driver.</p>
+            </div>
+            <div class="feature-card">
+              <div class="feature-icon-box">💰</div>
+              <h3>P2P Monetization</h3>
+              <p>Homeowners and businesses with residential wallbox chargers can list idle capacity and generate steady income.</p>
+            </div>
+            <div class="feature-card">
+              <div class="feature-icon-box">💬</div>
+              <h3>Direct WhatsApp Chat</h3>
+              <p>Contact station hosts directly via WhatsApp with one click to confirm bay access, parking, or amenities.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- How It Works Section -->
+      <section class="how-section" id="how-it-works">
+        <div class="container">
+          <div class="section-header">
+            <span class="section-badge">Simple 3-Step Process</span>
+            <h2 class="section-title">How The System Works</h2>
+            <p class="section-subtitle">
+              Connecting EV drivers with private & commercial charger hosts in three simple steps.
+            </p>
+          </div>
+          <div class="steps-grid">
+            <div class="step-card">
+              <div class="step-number">1</div>
+              <h3>Search & Select</h3>
+              <p>Enter your location or city. Filter chargers by price, capacity (kW), connector type, and live availability.</p>
+            </div>
+            <div class="step-card">
+              <div class="step-number">2</div>
+              <h3>Submit Slot Request</h3>
+              <p>Specify your preferred charging date, arrival time, and required duration. Your request is sent directly to the host.</p>
+            </div>
+            <div class="step-card">
+              <div class="step-number">3</div>
+              <h3>Plug In & Charge</h3>
+              <p>The host confirms your booking. Arrive at the station, connect your EV, and complete your session seamlessly.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Two-Sided Benefits Section -->
+      <section class="benefits-section" id="benefits">
+        <div class="container">
+          <div class="section-header">
+            <span class="section-badge">Dual Marketplace</span>
+            <h2 class="section-title">Empowering EV Drivers & Charger Hosts</h2>
+            <p class="section-subtitle">
+              Designed to solve range anxiety for EV owners while creating a decentralized income model for charger hosts.
+            </p>
+          </div>
+          <div class="benefits-grid">
+            <div class="benefit-card owner-card">
+              <div class="benefit-header">
+                <div class="benefit-icon">🚗</div>
+                <div>
+                  <h3>For EV Owners</h3>
+                  <span style="font-size:0.85rem;color:var(--text-muted);">Drive confidently everywhere</span>
+                </div>
+              </div>
+              <ul class="benefit-list">
+                <li><span class="benefit-check">✓</span> <span>Discover chargers in residential & tech-park zones beyond public highways.</span></li>
+                <li><span class="benefit-check">✓</span> <span>Transparent per-kWh pricing with zero surge pricing or surprise fees.</span></li>
+                <li><span class="benefit-check">✓</span> <span>Direct WhatsApp chat with charger hosts for seamless arrival & gate entry.</span></li>
+                <li><span class="benefit-check">✓</span> <span>Real-time tracking of request statuses: Pending, Accepted, Completed.</span></li>
+              </ul>
+              <a href="#register-ev" class="btn btn-primary btn-full">Register as EV Owner</a>
+            </div>
+
+            <div class="benefit-card provider-card">
+              <div class="benefit-header">
+                <div class="benefit-icon">🔌</div>
+                <div>
+                  <h3>For Charger Hosts</h3>
+                  <span style="font-size:0.85rem;color:var(--text-muted);">Monetize idle wallbox chargers</span>
+                </div>
+              </div>
+              <ul class="benefit-list">
+                <li><span class="benefit-check">✓</span> <span>Turn your residential 7.4 kW / 22 kW wallbox into recurring monthly revenue.</span></li>
+                <li><span class="benefit-check">✓</span> <span>Full booking control: accept or decline requests based on your schedule.</span></li>
+                <li><span class="benefit-check">✓</span> <span>Set your own custom operating days, opening/closing hours, and tariffs.</span></li>
+                <li><span class="benefit-check">✓</span> <span>Instant availability toggle: mark your station unavailable with one click.</span></li>
+              </ul>
+              <a href="#register-provider" class="btn btn-outline btn-full">List Your Charger Today</a>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- CTA Banner -->
+      <section class="cta-section">
+        <div class="container">
+          <h2>Ready To Accelerate Clean Mobility?</h2>
+          <p>Join thousands of EV owners and charging hosts across Bengaluru, Delhi, Mumbai, Pune, and Hyderabad.</p>
+          <div class="cta-buttons">
+            <a href="#register-ev" class="btn btn-primary btn-lg">Create EV Owner Account</a>
+            <a href="#register-provider" class="btn btn-secondary btn-lg">Become a Charger Host</a>
+          </div>
+          <p class="cta-login">Already have an account? <a href="#login">Sign in here</a></p>
+        </div>
+      </section>
+
+      <!-- Modern Footer -->
+      <footer class="footer">
+        <div class="container">
+          <div class="footer-grid">
+            <div>
+              <div class="footer-brand">
+                <div class="brand-icon-wrapper" style="width:32px;height:32px;font-size:0.95rem;">⚡</div>
+                <span>EVCharge India</span>
+              </div>
+              <p class="footer-text">
+                Academic Mini Project — Smart EV Charging Station Finder & Availability System. Engineered with deterministic software principles and relational SQLite persistence.
+              </p>
+            </div>
+            <div class="footer-col">
+              <h4>Quick Links</h4>
+              <ul class="footer-links">
+                <li><a href="#landing">Home</a></li>
+                <li><a href="#find-stations">Find Charging Stations</a></li>
+                <li><a href="#register-ev">EV Owner Sign Up</a></li>
+                <li><a href="#register-provider">List Your Charger</a></li>
+                <li><a href="#login">Account Login</a></li>
+              </ul>
+            </div>
+            <div class="footer-col">
+              <h4>Covered Cities</h4>
+              <ul class="footer-links">
+                <li><a href="#find-stations">Bengaluru (Whitefield & Indiranagar)</a></li>
+                <li><a href="#find-stations">New Delhi (Connaught Place & Dwarka)</a></li>
+                <li><a href="#find-stations">Mumbai (Bandra & Andheri)</a></li>
+                <li><a href="#find-stations">Pune (Kothrud & Hinjewadi)</a></li>
+                <li><a href="#find-stations">Hyderabad (Hitech City & Gachibowli)</a></li>
+              </ul>
+            </div>
+            <div class="footer-col">
+              <h4>Engineering Standards</h4>
+              <ul class="footer-links">
+                <li><span>Zero Black-Box AI / ML</span></li>
+                <li><span>100% Deterministic Tariffs</span></li>
+                <li><span>Atomic Slot Locking</span></li>
+                <li><span>Role-Based Access Control</span></li>
+              </ul>
+            </div>
+          </div>
+          <div class="footer-bottom">
+            <span>© 2026 EVCharge India. Academic Mini Project — Traditional Software Engineering.</span>
+            <span>Local Server Active: http://localhost:3000</span>
+          </div>
+        </div>
+      </footer>
+    </section>
+
+    <!-- ─────────────────────────────────────────────────────────────────────────
+         PAGE: LOGIN
+    ───────────────────────────────────────────────────────────────────────── -->
+    <section class="page hidden" id="page-login">
+      <div class="auth-container">
+        <div class="auth-card">
+          <div class="auth-header">
+            <div class="auth-icon-badge">⚡</div>
+            <h2>Sign In</h2>
+            <p>Access your EV charging account or host portal</p>
+          </div>
+          <form id="form-login" class="auth-form">
+            <div class="form-group">
+              <label for="login-email">Email Address</label>
+              <input type="email" id="login-email" placeholder="name@example.com" required autocomplete="username" />
+            </div>
+            <div class="form-group">
+              <label for="login-password">Password</label>
+              <input type="password" id="login-password" placeholder="Enter your password" required autocomplete="current-password" />
+            </div>
+            <div id="login-error" class="form-error hidden"></div>
+            <button type="submit" class="btn btn-primary btn-full btn-lg" id="btn-login">Sign In</button>
+          </form>
+
+          <div class="demo-accounts">
+            <div class="demo-title">Quick Demo Logins</div>
+            <div style="display:flex;gap:6px;justify-content:center;flex-wrap:wrap;">
+              <button type="button" class="demo-btn" onclick="fillDemo('rahul@example.com','owner123')">👤 Rahul (EV Owner)</button>
+              <button type="button" class="demo-btn" onclick="fillDemo('priya@example.com','provider123')">🔌 Priya (Host)</button>
+            </div>
+          </div>
+
+          <div class="auth-footer">
+            <p>Don't have an account yet?</p>
+            <div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:center;">
+              <a href="#register-ev" class="btn btn-secondary btn-sm">Register as EV Owner</a>
+              <a href="#register-provider" class="btn btn-secondary btn-sm">Register as Host</a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ─────────────────────────────────────────────────────────────────────────
+         PAGE: REGISTER - EV OWNER
+    ───────────────────────────────────────────────────────────────────────── -->
+    <section class="page hidden" id="page-register-ev">
+      <div class="auth-container">
+        <div class="auth-card auth-card-wide">
+          <div class="auth-header">
+            <div class="auth-icon-badge">🚗</div>
+            <h2>Register as EV Owner</h2>
+            <p>Create your driver profile to discover and request charging sessions</p>
+          </div>
+          <form id="form-register-ev" class="auth-form">
+            <div class="form-section-title">👤 Personal Details</div>
+            <div class="form-row">
+              <div class="form-group">
+                <label for="ev-name">Full Name *</label>
+                <input type="text" id="ev-name" placeholder="e.g. Rahul Kumar" required />
+              </div>
+              <div class="form-group">
+                <label for="ev-email">Email Address *</label>
+                <input type="email" id="ev-email" placeholder="rahul@example.com" required />
+              </div>
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label for="ev-password">Password (Min 6 characters) *</label>
+                <input type="password" id="ev-password" placeholder="••••••••" required minlength="6" />
+              </div>
+              <div class="form-group">
+                <label for="ev-phone">Mobile Phone Number *</label>
+                <input type="tel" id="ev-phone" placeholder="9876543210" required />
+              </div>
+            </div>
+
+            <div class="form-section-title">🚗 Vehicle Information</div>
+            <div class="form-row">
+              <div class="form-group">
+                <label for="ev-vehicle-name">Vehicle Make & Model *</label>
+                <input type="text" id="ev-vehicle-name" placeholder="e.g. Tata Nexon EV" required />
+              </div>
+              <div class="form-group">
+                <label for="ev-vehicle-model">Trim / Battery Variant *</label>
+                <input type="text" id="ev-vehicle-model" placeholder="e.g. Long Range Max (40.5 kWh)" required />
+              </div>
+            </div>
+            <div class="form-group">
+              <label for="ev-vehicle-number">License Plate Number (Reg. No.) *</label>
+              <input type="text" id="ev-vehicle-number" placeholder="e.g. KA-01-EV-4421" required style="text-transform:uppercase;" />
+            </div>
+
+            <div id="register-ev-error" class="form-error hidden"></div>
+            <button type="submit" class="btn btn-primary btn-full btn-lg">Create EV Owner Account</button>
+          </form>
+
+          <div class="auth-footer">
+            <p>Already registered? <a href="#login" style="font-weight:600;">Sign in here</a></p>
+            <p>Want to list a charger instead? <a href="#register-provider">Register as Charger Host</a></p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ─────────────────────────────────────────────────────────────────────────
+         PAGE: REGISTER - CHARGER PROVIDER
+    ───────────────────────────────────────────────────────────────────────── -->
+    <section class="page hidden" id="page-register-provider">
+      <div class="auth-container">
+        <div class="auth-card auth-card-wide">
+          <div class="auth-header">
+            <div class="auth-icon-badge">🔌</div>
+            <h2>Register as Charger Host</h2>
+            <p>List your home or commercial charging station and start monetizing idle slots</p>
+          </div>
+          <form id="form-register-provider" class="auth-form">
+            <div class="form-section-title">👤 Host Information</div>
+            <div class="form-row">
+              <div class="form-group">
+                <label for="p-name">Host Full Name *</label>
+                <input type="text" id="p-name" placeholder="e.g. Priya Sharma" required />
+              </div>
+              <div class="form-group">
+                <label for="p-email">Email Address *</label>
+                <input type="email" id="p-email" placeholder="priya@example.com" required />
+              </div>
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label for="p-password">Password (Min 6 characters) *</label>
+                <input type="password" id="p-password" placeholder="••••••••" required minlength="6" />
+              </div>
+              <div class="form-group">
+                <label for="p-phone">Phone Number *</label>
+                <input type="tel" id="p-phone" placeholder="9845011223" required />
+              </div>
+            </div>
+            <div class="form-group">
+              <label for="p-whatsapp">WhatsApp Number (For instant driver inquiries)</label>
+              <input type="tel" id="p-whatsapp" placeholder="WhatsApp number (leave empty if same as phone)" />
+            </div>
+
+            <div class="form-section-title">⚡ Charging Station Information</div>
+            <div class="form-row">
+              <div class="form-group">
+                <label for="p-station-name">Station Name *</label>
+                <input type="text" id="p-station-name" placeholder="e.g. GreenWay Hub - Indiranagar" required />
+              </div>
+              <div class="form-group">
+                <label for="p-city">City *</label>
+                <select id="p-city" required>
+                  <option value="">Select Metro City</option>
+                  <option value="Bengaluru">Bengaluru</option>
+                  <option value="New Delhi">New Delhi</option>
+                  <option value="Mumbai">Mumbai</option>
+                  <option value="Pune">Pune</option>
+                  <option value="Hyderabad">Hyderabad</option>
+                  <option value="Chennai">Chennai</option>
+                  <option value="Kolkata">Kolkata</option>
+                  <option value="Ahmedabad">Ahmedabad</option>
+                  <option value="Gurugram">Gurugram</option>
+                  <option value="Noida">Noida</option>
+                </select>
+              </div>
+            </div>
+            <div class="form-group">
+              <label for="p-address">Full Street Address *</label>
+              <textarea id="p-address" placeholder="Building, Street, Landmark, Area" required rows="2"></textarea>
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label for="p-pincode">PIN Code</label>
+                <input type="text" id="p-pincode" placeholder="e.g. 560038" maxlength="6" />
+              </div>
+              <div class="form-group">
+                <label for="p-charger-type">Charger Plug Type *</label>
+                <select id="p-charger-type" required>
+                  <option value="">Select Connector</option>
+                  <option value="CCS2 DC Fast">CCS2 DC Fast (High Speed)</option>
+                  <option value="Type 2 AC">Type 2 AC (Wallbox / Community)</option>
+                  <option value="Type 2 AC Wallbox">Type 2 AC Wallbox</option>
+                  <option value="15A Socket">15A Standard Socket</option>
+                  <option value="CHAdeMO">CHAdeMO DC</option>
+                  <option value="CCS2 / CHAdeMO Dual">CCS2 / CHAdeMO Dual</option>
+                </select>
+              </div>
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label for="p-capacity">Charging Capacity (kW) *</label>
+                <input type="number" id="p-capacity" placeholder="e.g. 50" required min="1" max="350" step="0.1" />
+              </div>
+              <div class="form-group">
+                <label for="p-price">Tariff per kWh (₹) *</label>
+                <input type="number" id="p-price" placeholder="e.g. 14.00" required min="1" max="50" step="0.5" />
+              </div>
+            </div>
+            <div class="form-group">
+              <label>Available Days of Operation *</label>
+              <div class="days-checkboxes" id="p-days-checkboxes">
+                <label class="day-checkbox"><input type="checkbox" value="Monday" checked /> Mon</label>
+                <label class="day-checkbox"><input type="checkbox" value="Tuesday" checked /> Tue</label>
+                <label class="day-checkbox"><input type="checkbox" value="Wednesday" checked /> Wed</label>
+                <label class="day-checkbox"><input type="checkbox" value="Thursday" checked /> Thu</label>
+                <label class="day-checkbox"><input type="checkbox" value="Friday" checked /> Fri</label>
+                <label class="day-checkbox"><input type="checkbox" value="Saturday" checked /> Sat</label>
+                <label class="day-checkbox"><input type="checkbox" value="Sunday" checked /> Sun</label>
+              </div>
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label for="p-start-time">Opening Time *</label>
+                <input type="time" id="p-start-time" value="06:00" required />
+              </div>
+              <div class="form-group">
+                <label for="p-close-time">Closing Time *</label>
+                <input type="time" id="p-close-time" value="23:30" required />
+              </div>
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label for="p-duration">Average Charging Duration (Minutes)</label>
+                <input type="number" id="p-duration" placeholder="60" min="15" max="480" value="60" />
+              </div>
+              <div class="form-group">
+                <label for="p-points">Number of Charging Points / Bays</label>
+                <input type="number" id="p-points" placeholder="1" min="1" max="20" value="1" />
+              </div>
+            </div>
+            <div class="form-group">
+              <label for="p-description">Station Amenities & Driver Instructions</label>
+              <textarea id="p-description" placeholder="e.g. Covered bay, CCTV surveillance, 24/7 security, cafe nearby..." rows="3"></textarea>
+            </div>
+
+            <div id="register-provider-error" class="form-error hidden"></div>
+            <button type="submit" class="btn btn-primary btn-full btn-lg">Register & List My Charger</button>
+          </form>
+
+          <div class="auth-footer">
+            <p>Already registered? <a href="#login" style="font-weight:600;">Sign in here</a></p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ─────────────────────────────────────────────────────────────────────────
+         PAGE: EV OWNER DASHBOARD
+    ───────────────────────────────────────────────────────────────────────── -->
+    <section class="page hidden" id="page-ev-dashboard">
+      <div class="container">
+        <div class="page-header">
+          <div>
+            <h1 id="ev-welcome">Welcome back! 👋</h1>
+            <p class="page-subtitle">Your EV Driver Control Center — discover stations, book slots, and track charging sessions.</p>
+          </div>
+          <div class="page-header-actions">
+            <a href="#find-stations" class="btn btn-primary">🔍 Find Chargers</a>
+          </div>
+        </div>
+
+        <!-- Metric Statistics Cards -->
+        <div class="stats-grid" id="ev-stats-grid">
+          <div class="stat-card">
+            <div class="stat-card-icon" style="background:var(--primary-soft);color:var(--primary);">⚡</div>
+            <div class="stat-card-info">
+              <span class="stat-card-number" id="ev-stat-total">0</span>
+              <span class="stat-card-label">Total Stations</span>
+            </div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-card-icon" style="background:#DEF7EC;color:#03543F;">✅</div>
+            <div class="stat-card-info">
+              <span class="stat-card-number" id="ev-stat-available">0</span>
+              <span class="stat-card-label">Available Now</span>
+            </div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-card-icon" style="background:#FEF3C7;color:#92400E;">⏳</div>
+            <div class="stat-card-info">
+              <span class="stat-card-number" id="ev-stat-pending">0</span>
+              <span class="stat-card-label">Pending Requests</span>
+            </div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-card-icon" style="background:#D1FAE5;color:#065F46;">🎉</div>
+            <div class="stat-card-info">
+              <span class="stat-card-number" id="ev-stat-accepted">0</span>
+              <span class="stat-card-label">Accepted Bookings</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Quick Actions Navigation -->
+        <div class="dashboard-actions">
+          <h2>Quick Actions</h2>
+          <div class="quick-actions">
+            <a href="#find-stations" class="action-card">
+              <span class="action-icon">🔍</span>
+              <span>Find Nearby Chargers</span>
+            </a>
+            <a href="#my-requests" class="action-card">
+              <span class="action-icon">📋</span>
+              <span>View My Requests</span>
+            </a>
+            <a href="#ev-profile" class="action-card">
+              <span class="action-icon">👤</span>
+              <span>My Vehicle Profile</span>
+            </a>
+          </div>
+        </div>
+
+        <!-- Registered Charging Stations Section on Dashboard -->
+        <div style="margin-top:40px;">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;flex-wrap:wrap;gap:12px;">
+            <div>
+              <h2 style="font-size:1.35rem;font-weight:700;">Explore Registered Charging Stations</h2>
+              <p style="font-size:0.875rem;color:var(--text-muted);">Verified charging bays with deterministic per-kWh tariffs.</p>
+            </div>
+            <a href="#find-stations" class="btn btn-outline btn-sm">View All & Filter →</a>
+          </div>
+          <div id="dashboard-stations-preview" class="stations-grid"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ─────────────────────────────────────────────────────────────────────────
+         PAGE: FIND CHARGING STATIONS
+    ───────────────────────────────────────────────────────────────────────── -->
+    <section class="page hidden" id="page-find-stations">
+      <div class="container">
+        <div class="page-header">
+          <div>
+            <h1>Find Charging Stations</h1>
+            <p class="page-subtitle">Search, filter, and discover verified public and private chargers across India.</p>
+          </div>
+        </div>
+
+        <!-- Filter Bar -->
+        <div class="filter-bar">
+          <div class="search-box">
+            <span class="search-icon">🔍</span>
+            <input type="text" id="station-search" placeholder="Search by city, landmark, or station name..." />
+          </div>
+          <div class="filter-controls">
+            <select id="filter-charger-type">
+              <option value="">All Charger Types</option>
+              <option value="CCS2 DC Fast">CCS2 DC Fast</option>
+              <option value="Type 2 AC">Type 2 AC</option>
+              <option value="Type 2 AC Wallbox">Type 2 AC Wallbox</option>
+              <option value="15A Socket">15A Socket</option>
+              <option value="CHAdeMO">CHAdeMO</option>
+              <option value="CCS2 / CHAdeMO Dual">CCS2 / CHAdeMO Dual</option>
+            </select>
+            <select id="filter-available">
+              <option value="">All Availability</option>
+              <option value="1">Available Only</option>
+            </select>
+            <select id="filter-price">
+              <option value="">Any Tariff</option>
+              <option value="11">Under ₹11 / kWh</option>
+              <option value="13">Under ₹13 / kWh</option>
+              <option value="15">Under ₹15 / kWh</option>
+              <option value="20">Under ₹20 / kWh</option>
+            </select>
+            <button class="btn btn-secondary btn-sm" id="btn-clear-filters">Reset</button>
+          </div>
+        </div>
+
+        <div id="stations-loading" class="loading-state">
+          <div class="spinner-sm"></div>
+          <span>Loading verified charging stations...</span>
+        </div>
+
+        <div id="stations-grid" class="stations-grid"></div>
+
+        <div id="stations-empty" class="empty-state hidden">
+          <div class="empty-icon">🔌</div>
+          <h3>No matching charging stations found</h3>
+          <p>Try clearing your search query or selecting "All Availability".</p>
+          <button class="btn btn-outline btn-sm" onclick="document.getElementById('btn-clear-filters').click()">Clear Filters</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ─────────────────────────────────────────────────────────────────────────
+         PAGE: STATION DETAIL
+    ───────────────────────────────────────────────────────────────────────── -->
+    <section class="page hidden" id="page-station-detail">
+      <div class="container">
+        <button class="btn-back" onclick="history.back()">← Back to Stations List</button>
+        <div id="station-detail-content"></div>
+      </div>
+    </section>
+
+    <!-- ─────────────────────────────────────────────────────────────────────────
+         PAGE: REQUEST CHARGING FORM
+    ───────────────────────────────────────────────────────────────────────── -->
+    <section class="page hidden" id="page-request-form">
+      <div class="container">
+        <button class="btn-back" onclick="navigateTo('find-stations')">← Back to Stations</button>
+        <div class="form-card">
+          <div class="form-card-header">
+            <h2>⚡ Request Charging Session</h2>
+            <p>Your request will be submitted directly to the verified station host</p>
+            <div class="station-banner" id="request-station-banner"></div>
+          </div>
+          <form id="form-request" class="auth-form">
+            <div class="form-section-title">👤 Driver Contact & Vehicle Details</div>
+            <div class="form-row">
+              <div class="form-group">
+                <label for="req-name">EV Owner Name</label>
+                <input type="text" id="req-name" readonly class="readonly-input" />
+              </div>
+              <div class="form-group">
+                <label for="req-phone">Contact Phone Number *</label>
+                <input type="tel" id="req-phone" placeholder="10-digit number" required />
+              </div>
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label for="req-vehicle-name">Vehicle Model *</label>
+                <input type="text" id="req-vehicle-name" placeholder="e.g. Tata Nexon EV" required />
+              </div>
+              <div class="form-group">
+                <label for="req-vehicle-number">License Plate Number *</label>
+                <input type="text" id="req-vehicle-number" placeholder="e.g. KA-01-EV-4421" required style="text-transform:uppercase;" />
+              </div>
+            </div>
+
+            <div class="form-section-title">📅 Preferred Booking Slot</div>
+            <div class="form-row">
+              <div class="form-group">
+                <label for="req-date">Charging Date *</label>
+                <input type="date" id="req-date" required />
+              </div>
+              <div class="form-group">
+                <label for="req-time">Preferred Starting Time *</label>
+                <input type="time" id="req-time" required />
+              </div>
+            </div>
+            <div class="form-group">
+              <label for="req-duration">Required Charging Duration *</label>
+              <select id="req-duration" required>
+                <option value="">Select duration</option>
+                <option value="30">30 Minutes (Quick Top-Up)</option>
+                <option value="45">45 Minutes</option>
+                <option value="60" selected>1 Hour (Standard Fast Charge)</option>
+                <option value="90">1.5 Hours</option>
+                <option value="120">2 Hours</option>
+                <option value="180">3 Hours (AC Slow Charge)</option>
+                <option value="240">4 Hours</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label for="req-message">Note / Message to Charger Host</label>
+              <textarea id="req-message" placeholder="e.g. Arriving with 15% battery. Need connector adapter if available..." rows="3"></textarea>
+            </div>
+
+            <input type="hidden" id="req-station-id" />
+            <div id="request-error" class="form-error hidden"></div>
+            <button type="submit" class="btn btn-primary btn-full btn-lg">Submit Charging Request</button>
+          </form>
+        </div>
+      </div>
+    </section>
+
+    <!-- ─────────────────────────────────────────────────────────────────────────
+         PAGE: MY REQUESTS (EV OWNER)
+    ───────────────────────────────────────────────────────────────────────── -->
+    <section class="page hidden" id="page-my-requests">
+      <div class="container">
+        <div class="page-header">
+          <div>
+            <h1>My Charging Requests</h1>
+            <p class="page-subtitle">Track real-time status changes made by charger hosts.</p>
+          </div>
+          <div class="page-header-actions">
+            <a href="#find-stations" class="btn btn-primary">+ New Charging Request</a>
+          </div>
+        </div>
+
+        <!-- Filter Tabs -->
+        <div class="filter-tabs" id="request-filter-tabs">
+          <button class="filter-tab active" data-filter="ALL">All Requests</button>
+          <button class="filter-tab" data-filter="PENDING">Pending</button>
+          <button class="filter-tab" data-filter="ACCEPTED">Accepted</button>
+          <button class="filter-tab" data-filter="COMPLETED">Completed</button>
+          <button class="filter-tab" data-filter="REJECTED">Rejected</button>
+          <button class="filter-tab" data-filter="CANCELLED">Cancelled</button>
+        </div>
+
+        <div id="my-requests-loading" class="loading-state">
+          <div class="spinner-sm"></div>
+          <span>Loading your requests...</span>
+        </div>
+
+        <div id="my-requests-list"></div>
+
+        <div id="my-requests-empty" class="empty-state hidden">
+          <div class="empty-icon">📋</div>
+          <h3>No requests in this category</h3>
+          <p>Find a verified charging station and book your preferred slot.</p>
+          <a href="#find-stations" class="btn btn-primary">Find Charging Stations</a>
+        </div>
+      </div>
+    </section>
+
+    <!-- ─────────────────────────────────────────────────────────────────────────
+         PAGE: EV OWNER PROFILE
+    ───────────────────────────────────────────────────────────────────────── -->
+    <section class="page hidden" id="page-ev-profile">
+      <div class="container container-sm">
+        <div class="page-header">
+          <div>
+            <h1>Driver Profile</h1>
+            <p class="page-subtitle">Your registered driver credentials and vehicle specifications.</p>
+          </div>
+        </div>
+        <div class="profile-card">
+          <div class="profile-avatar" id="ev-profile-avatar">🚗</div>
+          <div id="ev-profile-content"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ─────────────────────────────────────────────────────────────────────────
+         PAGE: CHARGER PROVIDER DASHBOARD
+    ───────────────────────────────────────────────────────────────────────── -->
+    <section class="page hidden" id="page-provider-dashboard">
+      <div class="container">
+        <div class="page-header">
+          <div>
+            <h1 id="provider-welcome">Welcome back, Host! 👋</h1>
+            <p class="page-subtitle">Host Control Center — manage your stations, monitor capacity, and respond to incoming booking requests.</p>
+          </div>
+          <div class="page-header-actions">
+            <a href="#add-charger" class="btn btn-primary">+ Add New Station</a>
+          </div>
+        </div>
+
+        <!-- Provider Metrics Grid (6 Cards) -->
+        <div class="stats-grid">
+          <div class="stat-card">
+            <div class="stat-card-icon" style="background:var(--primary-soft);color:var(--primary);">⚡</div>
+            <div class="stat-card-info">
+              <span class="stat-card-number" id="p-stat-stations">0</span>
+              <span class="stat-card-label">My Stations</span>
+            </div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-card-icon" style="background:#DEF7EC;color:#03543F;">🔌</div>
+            <div class="stat-card-info">
+              <span class="stat-card-number" id="p-stat-points">0</span>
+              <span class="stat-card-label">Charging Bays</span>
+            </div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-card-icon" style="background:#E0E7FF;color:#3730A3;">📥</div>
+            <div class="stat-card-info">
+              <span class="stat-card-number" id="p-stat-total-req">0</span>
+              <span class="stat-card-label">Total Requests</span>
+            </div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-card-icon" style="background:#FEF3C7;color:#92400E;">⏳</div>
+            <div class="stat-card-info">
+              <span class="stat-card-number" id="p-stat-pending">0</span>
+              <span class="stat-card-label">Pending</span>
+            </div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-card-icon" style="background:#D1FAE5;color:#065F46;">✅</div>
+            <div class="stat-card-info">
+              <span class="stat-card-number" id="p-stat-accepted">0</span>
+              <span class="stat-card-label">Accepted</span>
+            </div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-card-icon" style="background:#DBEAFE;color:#1E40AF;">🏁</div>
+            <div class="stat-card-info">
+              <span class="stat-card-number" id="p-stat-completed">0</span>
+              <span class="stat-card-label">Completed</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Quick Actions Navigation -->
+        <div class="dashboard-actions">
+          <h2>Host Quick Actions</h2>
+          <div class="quick-actions">
+            <a href="#incoming-requests" class="action-card">
+              <span class="action-icon">📥</span>
+              <span>Review Incoming Requests</span>
+            </a>
+            <a href="#my-chargers" class="action-card">
+              <span class="action-icon">⚡</span>
+              <span>Manage My Chargers</span>
+            </a>
+            <a href="#add-charger" class="action-card">
+              <span class="action-icon">➕</span>
+              <span>Register New Charger</span>
+            </a>
+            <a href="#provider-profile" class="action-card">
+              <span class="action-icon">👤</span>
+              <span>Host Profile</span>
+            </a>
+          </div>
+        </div>
+
+        <!-- Incoming Requests Table Section on Dashboard -->
+        <div style="margin-top:40px;">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:12px;">
+            <div>
+              <h2 style="font-size:1.35rem;font-weight:700;">Recent Incoming Requests</h2>
+              <p style="font-size:0.875rem;color:var(--text-muted);">Drivers requesting to charge at your registered stations.</p>
+            </div>
+            <a href="#incoming-requests" class="btn btn-outline btn-sm">Full Request Manager →</a>
+          </div>
+          <div id="dashboard-incoming-table-container"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ─────────────────────────────────────────────────────────────────────────
+         PAGE: INCOMING REQUESTS (PROVIDER)
+    ───────────────────────────────────────────────────────────────────────── -->
+    <section class="page hidden" id="page-incoming-requests">
+      <div class="container">
+        <div class="page-header">
+          <div>
+            <h1>Incoming Charging Requests</h1>
+            <p class="page-subtitle">Review driver booking requests for your charging bays.</p>
+          </div>
+          <span class="badge-count" id="pending-badge"></span>
+        </div>
+
+        <!-- Filter Tabs -->
+        <div class="filter-tabs" id="incoming-filter-tabs">
+          <button class="filter-tab active" data-filter="ALL">All Requests</button>
+          <button class="filter-tab" data-filter="PENDING">Pending</button>
+          <button class="filter-tab" data-filter="ACCEPTED">Accepted</button>
+          <button class="filter-tab" data-filter="COMPLETED">Completed</button>
+          <button class="filter-tab" data-filter="REJECTED">Rejected</button>
+        </div>
+
+        <div id="incoming-requests-loading" class="loading-state">
+          <div class="spinner-sm"></div>
+          <span>Loading incoming requests...</span>
+        </div>
+
+        <div id="incoming-requests-list"></div>
+
+        <div id="incoming-requests-empty" class="empty-state hidden">
+          <div class="empty-icon">📭</div>
+          <h3>No incoming requests in this category</h3>
+          <p>When EV owners request charging at your stations, they will appear here in real time.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ─────────────────────────────────────────────────────────────────────────
+         PAGE: MY CHARGERS (PROVIDER)
+    ───────────────────────────────────────────────────────────────────────── -->
+    <section class="page hidden" id="page-my-chargers">
+      <div class="container">
+        <div class="page-header">
+          <div>
+            <h1>My Registered Stations</h1>
+            <p class="page-subtitle">Manage station details, toggle live availability, and update tariffs.</p>
+          </div>
+          <div class="page-header-actions">
+            <a href="#add-charger" class="btn btn-primary">+ Add New Station</a>
+          </div>
+        </div>
+
+        <div id="my-chargers-loading" class="loading-state">
+          <div class="spinner-sm"></div>
+          <span>Loading your charging stations...</span>
+        </div>
+
+        <div id="my-chargers-list"></div>
+
+        <div id="my-chargers-empty" class="empty-state hidden">
+          <div class="empty-icon">⚡</div>
+          <h3>No charging stations registered yet</h3>
+          <p>List your first charging unit to start receiving driver booking requests.</p>
+          <a href="#add-charger" class="btn btn-primary">+ Add Station</a>
+        </div>
+      </div>
+    </section>
+
+    <!-- ─────────────────────────────────────────────────────────────────────────
+         PAGE: ADD CHARGER
+    ───────────────────────────────────────────────────────────────────────── -->
+    <section class="page hidden" id="page-add-charger">
+      <div class="container">
+        <button class="btn-back" onclick="navigateTo('my-chargers')">← Back to My Chargers</button>
+        <div class="form-card">
+          <div class="form-card-header">
+            <h2>➕ Add New Charging Station</h2>
+            <p>Publish a new public or private charging point to the network</p>
+          </div>
+          <form id="form-add-charger" class="auth-form">
+            <div class="form-row">
+              <div class="form-group">
+                <label for="ac-station-name">Station Name *</label>
+                <input type="text" id="ac-station-name" placeholder="e.g. Indiranagar Community Wallbox" required />
+              </div>
+              <div class="form-group">
+                <label for="ac-city">City *</label>
+                <select id="ac-city" required>
+                  <option value="">Select City</option>
+                  <option value="Bengaluru">Bengaluru</option>
+                  <option value="New Delhi">New Delhi</option>
+                  <option value="Mumbai">Mumbai</option>
+                  <option value="Pune">Pune</option>
+                  <option value="Hyderabad">Hyderabad</option>
+                  <option value="Chennai">Chennai</option>
+                  <option value="Kolkata">Kolkata</option>
+                  <option value="Ahmedabad">Ahmedabad</option>
+                  <option value="Gurugram">Gurugram</option>
+                  <option value="Noida">Noida</option>
+                </select>
+              </div>
+            </div>
+            <div class="form-group">
+              <label for="ac-address">Full Street Address *</label>
+              <textarea id="ac-address" placeholder="Building, Street, Landmark, Area" required rows="2"></textarea>
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label for="ac-pincode">PIN Code</label>
+                <input type="text" id="ac-pincode" placeholder="e.g. 560038" maxlength="6" />
+              </div>
+              <div class="form-group">
+                <label for="ac-charger-type">Charger Plug Type *</label>
+                <select id="ac-charger-type" required>
+                  <option value="">Select Connector</option>
+                  <option value="CCS2 DC Fast">CCS2 DC Fast (High Speed)</option>
+                  <option value="Type 2 AC">Type 2 AC</option>
+                  <option value="Type 2 AC Wallbox">Type 2 AC Wallbox</option>
+                  <option value="15A Socket">15A Socket</option>
+                  <option value="CHAdeMO">CHAdeMO</option>
+                  <option value="CCS2 / CHAdeMO Dual">CCS2 / CHAdeMO Dual</option>
+                </select>
+              </div>
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label for="ac-capacity">Charging Capacity (kW) *</label>
+                <input type="number" id="ac-capacity" placeholder="e.g. 22" required min="1" max="350" step="0.1" />
+              </div>
+              <div class="form-group">
+                <label for="ac-price">Tariff per kWh (₹) *</label>
+                <input type="number" id="ac-price" placeholder="e.g. 12.50" required min="1" max="50" step="0.5" />
+              </div>
+            </div>
+            <div class="form-group">
+              <label>Available Days *</label>
+              <div class="days-checkboxes" id="ac-days-checkboxes">
+                <label class="day-checkbox"><input type="checkbox" value="Monday" checked /> Mon</label>
+                <label class="day-checkbox"><input type="checkbox" value="Tuesday" checked /> Tue</label>
+                <label class="day-checkbox"><input type="checkbox" value="Wednesday" checked /> Wed</label>
+                <label class="day-checkbox"><input type="checkbox" value="Thursday" checked /> Thu</label>
+                <label class="day-checkbox"><input type="checkbox" value="Friday" checked /> Fri</label>
+                <label class="day-checkbox"><input type="checkbox" value="Saturday" checked /> Sat</label>
+                <label class="day-checkbox"><input type="checkbox" value="Sunday" checked /> Sun</label>
+              </div>
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label for="ac-start-time">Opening Time *</label>
+                <input type="time" id="ac-start-time" value="07:00" required />
+              </div>
+              <div class="form-group">
+                <label for="ac-close-time">Closing Time *</label>
+                <input type="time" id="ac-close-time" value="22:00" required />
+              </div>
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label for="ac-duration">Average Charging Duration (Minutes)</label>
+                <input type="number" id="ac-duration" value="60" min="15" max="480" />
+              </div>
+              <div class="form-group">
+                <label for="ac-points">Number of Charging Bays</label>
+                <input type="number" id="ac-points" value="1" min="1" max="20" />
+              </div>
+            </div>
+            <div class="form-group">
+              <label for="ac-description">Description & Amenities</label>
+              <textarea id="ac-description" placeholder="Gate access instructions, parking space details, shaded bay..." rows="3"></textarea>
+            </div>
+            <div id="add-charger-error" class="form-error hidden"></div>
+            <button type="submit" class="btn btn-primary btn-full btn-lg">Add Charging Station</button>
+          </form>
+        </div>
+      </div>
+    </section>
+
+    <!-- ─────────────────────────────────────────────────────────────────────────
+         PAGE: EDIT CHARGER
+    ───────────────────────────────────────────────────────────────────────── -->
+    <section class="page hidden" id="page-edit-charger">
+      <div class="container">
+        <button class="btn-back" onclick="navigateTo('my-chargers')">← Back to My Chargers</button>
+        <div class="form-card">
+          <div class="form-card-header">
+            <h2>✏️ Edit Charging Station</h2>
+            <p>Modify station specifications, operating hours, and live availability</p>
+          </div>
+          <form id="form-edit-charger" class="auth-form">
+            <input type="hidden" id="edit-station-id" />
+            <div class="form-row">
+              <div class="form-group">
+                <label for="edit-station-name">Station Name *</label>
+                <input type="text" id="edit-station-name" required />
+              </div>
+              <div class="form-group">
+                <label for="edit-city">City *</label>
+                <select id="edit-city" required>
+                  <option value="Bengaluru">Bengaluru</option>
+                  <option value="New Delhi">New Delhi</option>
+                  <option value="Mumbai">Mumbai</option>
+                  <option value="Pune">Pune</option>
+                  <option value="Hyderabad">Hyderabad</option>
+                  <option value="Chennai">Chennai</option>
+                  <option value="Kolkata">Kolkata</option>
+                  <option value="Ahmedabad">Ahmedabad</option>
+                  <option value="Gurugram">Gurugram</option>
+                  <option value="Noida">Noida</option>
+                </select>
+              </div>
+            </div>
+            <div class="form-group">
+              <label for="edit-address">Full Address *</label>
+              <textarea id="edit-address" required rows="2"></textarea>
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label for="edit-pincode">PIN Code</label>
+                <input type="text" id="edit-pincode" maxlength="6" />
+              </div>
+              <div class="form-group">
+                <label for="edit-charger-type">Charger Type *</label>
+                <select id="edit-charger-type" required>
+                  <option value="CCS2 DC Fast">CCS2 DC Fast</option>
+                  <option value="Type 2 AC">Type 2 AC</option>
+                  <option value="Type 2 AC Wallbox">Type 2 AC Wallbox</option>
+                  <option value="15A Socket">15A Socket</option>
+                  <option value="CHAdeMO">CHAdeMO</option>
+                  <option value="CCS2 / CHAdeMO Dual">CCS2 / CHAdeMO Dual</option>
+                </select>
+              </div>
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label for="edit-capacity">Capacity (kW) *</label>
+                <input type="number" id="edit-capacity" required min="1" max="350" step="0.1" />
+              </div>
+              <div class="form-group">
+                <label for="edit-price">Tariff per kWh (₹) *</label>
+                <input type="number" id="edit-price" required min="1" max="50" step="0.5" />
+              </div>
+            </div>
+            <div class="form-group">
+              <label>Available Days *</label>
+              <div class="days-checkboxes" id="edit-days-checkboxes">
+                <label class="day-checkbox"><input type="checkbox" value="Monday" /> Mon</label>
+                <label class="day-checkbox"><input type="checkbox" value="Tuesday" /> Tue</label>
+                <label class="day-checkbox"><input type="checkbox" value="Wednesday" /> Wed</label>
+                <label class="day-checkbox"><input type="checkbox" value="Thursday" /> Thu</label>
+                <label class="day-checkbox"><input type="checkbox" value="Friday" /> Fri</label>
+                <label class="day-checkbox"><input type="checkbox" value="Saturday" /> Sat</label>
+                <label class="day-checkbox"><input type="checkbox" value="Sunday" /> Sun</label>
+              </div>
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label for="edit-start-time">Opening Time *</label>
+                <input type="time" id="edit-start-time" required />
+              </div>
+              <div class="form-group">
+                <label for="edit-close-time">Closing Time *</label>
+                <input type="time" id="edit-close-time" required />
+              </div>
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label for="edit-duration">Average Duration (Minutes)</label>
+                <input type="number" id="edit-duration" min="15" max="480" />
+              </div>
+              <div class="form-group">
+                <label for="edit-points">Charging Points</label>
+                <input type="number" id="edit-points" min="1" max="20" />
+              </div>
+            </div>
+            <div class="form-group">
+              <label for="edit-description">Description & Amenities</label>
+              <textarea id="edit-description" rows="3"></textarea>
+            </div>
+            <div class="form-group">
+              <label for="edit-is-available">Live Availability Status</label>
+              <select id="edit-is-available">
+                <option value="1">✅ Available (Drivers can book)</option>
+                <option value="0">❌ Unavailable (Temporarily offline)</option>
+              </select>
+            </div>
+            <div id="edit-charger-error" class="form-error hidden"></div>
+            <button type="submit" class="btn btn-primary btn-full btn-lg">Save Changes</button>
+          </form>
+        </div>
+      </div>
+    </section>
+
+    <!-- ─────────────────────────────────────────────────────────────────────────
+         PAGE: PROVIDER PROFILE
+    ───────────────────────────────────────────────────────────────────────── -->
+    <section class="page hidden" id="page-provider-profile">
+      <div class="container container-sm">
+        <div class="page-header">
+          <div>
+            <h1>Host Profile</h1>
+            <p class="page-subtitle">Your host identity and registered charging stations summary.</p>
+          </div>
+        </div>
+        <div class="profile-card">
+          <div class="profile-avatar" style="background:var(--primary-soft);color:var(--primary);">🔌</div>
+          <div id="provider-profile-content"></div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+</div>
+
+<!-- ═════════════════════════════════════════════════════════════════════════════
+     CONFIRMATION / SUCCESS MODAL
+═════════════════════════════════════════════════════════════════════════════ -->
+<div class="modal-overlay hidden" id="success-modal">
+  <div class="modal-box">
+    <div class="modal-icon">🎉</div>
+    <h2 id="modal-title">Success!</h2>
+    <p id="modal-message"></p>
+    <div class="modal-detail" id="modal-detail"></div>
+    <button class="btn btn-primary btn-full" id="modal-btn">Continue</button>
+  </div>
+</div>
+
+<script src="js/api.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>
